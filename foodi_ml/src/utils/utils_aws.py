@@ -133,11 +133,18 @@ class ImageDownloaderParallelS3:
         
     def create_jobs(self, samples):
         jobs = []
+        
+        # Keep appending image names to the jobs list
         for img_url in samples["image_names_s3"].to_list():
                 img_s3_key = img_url.split("/")[-1]
                 full_name = os.path.join(self.base_path, img_s3_key)
                 jobs.append((img_url, full_name))
-        return jobs
+                
+        # Modify img_path to the local instance path
+        samples["img_path"] = samples["image_names_s3"].apply(
+            lambda x: os.path.join(self.base_path, x.split("/")[-1])
+        )
+        return jobs, samples
     
     @staticmethod
     def download_images(job):
@@ -149,7 +156,7 @@ class ImageDownloaderParallelS3:
                         con_parallel.bucket, 
                         img_url, 
                         f_handle
-            )
+                    )
             except:
                 return False
         return True
